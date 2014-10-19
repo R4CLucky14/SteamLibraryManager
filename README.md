@@ -1,4 +1,4 @@
 SteamLibraryManager
 ===================
 
-This is the repository for SteamLibraryManager
+This is the repository for SteamLibraryManager.

@@ -10,40 +10,49 @@ using System.Windows.Forms;
 using System.IO;
 using IWshRuntimeLibrary;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace SteamLibraryManager
 {
     public partial class frmMain : Form
     {
+
+
         public frmMain()
         {
-            InitializeComponent();
+            try
+            {
+                InitializeComponent();
+
+                new Thread(new ThreadStart(delegate
+                {
+                    Global.Instance.FindSteamLibraries();
+
+                    foreach (SteamLibrary library in Global.Instance.Libraries)
+                    {
+                        InvokeCB(library.Path);
+                    }
+                })).Start();
+            } 
+            catch(SteamNotFoundException ex)
+            {
+                if(MessageBox.Show(this, "Steam is not installed on your computer.", "SteamLibraryManager") == DialogResult.OK)
+                {
+                    Application.Exit();
+                }
+            }
         }
 
-        private void btnSelect_Click(object sender, EventArgs e)
+        private void InvokeCB(string path)
         {
-            var dlg = new FolderBrowserDialog();
-            dlg.Description = "Select A SteamApps Folder";
-            if(dlg.ShowDialog() == DialogResult.OK)
+            if(this.InvokeRequired)
             {
-                string path = dlg.SelectedPath;
-                var files = Directory.EnumerateFiles(path, "*.acf", SearchOption.TopDirectoryOnly);
-                lvwGames.Items.Clear();
-                SteamLibrary library = new SteamLibrary(path);
-                lblLibraryPath.Text = path;
-                ACFParser parser = new ACFParser();
-                foreach(var file in files)
-                {
-                    string[] tokens = parser.Parse(file).Split(',');
-                    if (tokens.Length == 3)
-                    {
-                        SteamGame game = new SteamGame(tokens[0].Replace("\r\n", ""), library.Path + "\\common\\" + tokens[1].Replace("\r\n", ""), Convert.ToInt32(tokens[2].Replace("\r\n", "")));
-                        library.Games.Add(game);
-                        GameItem item = new GameItem(game);
-                        lvwGames.Items.Add(item);
-                    }
-                }
-                lblLibraryGames.Text = "Games Found: " + library.Games.Count + ".";
+                this.Invoke(new MethodInvoker(() => { InvokeCB(path); }));
+            }
+            else
+            { 
+                cbLibraries.Items.Add(path);
+                cbLibraries.SelectedValue = path;
             }
         }
 
@@ -69,6 +78,22 @@ namespace SteamLibraryManager
                 shortcut.TargetPath = "steam://rungameid/" + item.Game.AppID;
 
                 shortcut.Save(); 
+            }
+        }
+
+        private void cbLibraries_SelectedValueChanged(object sender, EventArgs e)
+        {
+            if(cbLibraries.SelectedIndex != -1)
+            {
+                lvwGames.Items.Clear();
+                string value = ((string)cbLibraries.Items[cbLibraries.SelectedIndex]);
+                if (value == null) return;
+
+                SteamLibrary library = Global.Instance.Libraries.Find(lib => lib.Path == value);
+                foreach(SteamGame game in library.Games)
+                {
+                    lvwGames.Items.Add(new GameItem(game));
+                }
             }
         }
     }

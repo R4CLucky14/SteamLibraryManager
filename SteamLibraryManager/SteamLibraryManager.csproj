@@ -63,8 +63,10 @@
   <ItemGroup>
     <Compile Include="Classes\ACFParser.cs" />
     <Compile Include="Classes\GameItem.cs" />
+    <Compile Include="Classes\Global.cs" />
     <Compile Include="Classes\SteamGame.cs" />
     <Compile Include="Classes\SteamLibrary.cs" />
+    <Compile Include="Exceptions\SteamNotFoundException.cs" />
     <Compile Include="Forms\frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
